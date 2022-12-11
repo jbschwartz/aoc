@@ -1,0 +1,9 @@
+[tool.black]
+line-length = 100
+
+[tool.isort]
+profile = "black"
+
+[tool.pylint.'MESSAGES CONTROL']
+disable = "C0114,W1203"
+good-names = "x,y,z,e"
