@@ -1,6 +1,7 @@
 import importlib.util
 import inspect
 import logging
+import os
 import pathlib
 import shutil
 import sys
@@ -9,6 +10,8 @@ from typing import Callable, Optional, Sequence
 from .arguments import parse_arguments
 
 INPUT_EXTENSION = ".txt"
+PART_ONE_FUNCTION = "one"
+PART_TWO_FUNCTION = "two"
 RUN_FUNCTION = "run"
 
 
@@ -29,25 +32,41 @@ def _runner(year: str, day: str) -> Callable:
     spec.loader.exec_module(module)
 
     try:
-        return getattr(module, RUN_FUNCTION)
+        return (getattr(module, RUN_FUNCTION),)
     except AttributeError as e:
-        raise NotImplementedError(
-            f"`{RUN_FUNCTION}` function is not implemented for {year} day {day}"
-        ) from e
+        try:
+            part_one = getattr(module, PART_ONE_FUNCTION)
+            part_two = getattr(module, PART_TWO_FUNCTION)
+
+            return part_one, part_two
+        except AttributeError as e:
+            raise NotImplementedError(
+                f"`{RUN_FUNCTION}` or `{PART_ONE_FUNCTION}` and `{PART_TWO_FUNCTION}` functions "
+                f"are not implemented for {year} day {day}"
+            ) from e
 
 
 def run(*, year: int, day: int, is_small: bool) -> None:
     """Run the test case for the given year and day."""
     input_file = _input_file_path(year, day, is_small)
 
+    if os.path.getsize(input_file) == 0:
+        logging.error("Input file is empty. No solution.")
+        return
+
     try:
-        with open(input_file, "r", encoding="utf-8") as file:
-            solutions = _runner(year, day)(file)
+        solutions = []
+        for runner in _runner(year, day):
+            with open(input_file, "r", encoding="utf-8") as file:
+                solutions.append(runner(file))
     except FileNotFoundError:
         logging.error(f"No input or solution file found for {year} day {day}")
         return
 
-    logging.info(f"Solutions: {solutions}")
+    if len(solutions) == 1:
+        solutions = solutions[0]
+
+    logging.info(f"Solutions: {tuple(solutions)}")
 
 
 def stub(*, year: str, day: str) -> None:
