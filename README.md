@@ -1,6 +1,6 @@
-# Advent of Code 2022
+# Advent of Code
 
-My solutions to [AOC 2022](https://adventofcode.com/2022) written in Python. Fun!
+My solutions to [AOC](https://adventofcode.com) written in Python.
 
 ## Running
 
