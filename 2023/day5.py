@@ -1,129 +1,200 @@
 import dataclasses
 import functools
-import logging
-import math
 from typing import TextIO, Tuple
 
 
 @dataclasses.dataclass
 class Range:
-    destination_start: int
-    source_start: int
+    start: int
     length: int
 
-    @property
-    def destination_end(self) -> int:
-        return self.destination_start + self.length - 1
+    def __str__(self) -> str:
+        return f"[{self.start}, {self.end}]"
+
+    @classmethod
+    def from_endpoints(cls, start: int, end: int) -> "Range":
+        length = end - start + 1
+        return cls(start, length)
+
+    def __lt__(self, other: "Range") -> bool:
+        return self.start < other.start
 
     @property
-    def source_end(self) -> int:
-        return self.source_start + self.length - 1
+    def end(self) -> int:
+        return self.start + self.length - 1
+
+    def intersects(self, other: "Range") -> bool:
+        """Return True if the ranges are intersecting."""
+        return self.start <= other.end and self.end >= other.start
+
+    def superset_of(self, other: "Range") -> bool:
+        """Return True if this range is a superset of the other range."""
+        return self.start <= other.start and self.end >= other.end
+
+    def split_intersections(self, other: "Range") -> tuple["Range", list["Range"]]:
+        """Return intersection the intersection with other and a list of split ranges."""
+        if not self.intersects(other):
+            return (None, [other])
+
+        if self.superset_of(other):
+            return (other, [])
+
+        if other.superset_of(self):
+            if other.start == self.start:
+                return (
+                    Range(self.start, self.length),
+                    [Range.from_endpoints(self.end + 1, other.end)],
+                )
+
+            elif other.end == self.end:
+                return (
+                    Range(self.start, self.length),
+                    [Range.from_endpoints(other.start, self.start - 1)],
+                )
+
+            else:
+                return (
+                    Range(self.start, self.length),
+                    [
+                        Range.from_endpoints(other.start, self.start - 1),
+                        Range.from_endpoints(self.end + 1, other.end),
+                    ],
+                )
+
+        if self.start <= other.start:
+            return (
+                Range.from_endpoints(other.start, self.end),
+                [Range.from_endpoints(self.end + 1, other.end)],
+            )
+        else:
+            return (
+                Range.from_endpoints(self.start, other.end),
+                [Range.from_endpoints(other.start, self.start - 1)],
+            )
+
+
+@dataclasses.dataclass
+class RangeMap:
+    destination: Range
+    source: Range
+
+    def __str__(self) -> str:
+        return f"{self.source} -> {self.destination}"
 
     def evaluate(self, source: int) -> int | None:
-        if self.source_start <= source <= self.source_end:
-            return self.destination_start + (source - self.source_start)
+        if self.source.start <= source <= self.source.end:
+            return self.destination.start + (source - self.source.start)
 
         return None
 
+    def evaluate_range(self, input_range: "Range") -> "Range":
+        assert self.source.superset_of(input_range)
 
-class Ranges:
-    def __init__(self) -> None:
-        self.ranges = []
+        return Range.from_endpoints(
+            self.evaluate(input_range.start), self.evaluate(input_range.end)
+        )
 
-    def add_range(self, range: Range) -> None:
-        self.ranges.append(range)
+    def split_evaluate(self, input_range: "Range") -> tuple[Range, list[Range]]:
+        intersecting, others = self.source.split_intersections(input_range)
+
+        if not intersecting:
+            return None, others
+
+        return self.evaluate_range(intersecting), others
+
+
+class Mapping:
+    def __init__(self, name: str, range_maps: list[RangeMap]) -> None:
+        self.name = name
+        self.range_maps = range_maps
+
+    @classmethod
+    def from_lines(cls, name: str, lines: list[str]) -> "Mapping":
+        range_maps = []
+
+        for line in lines:
+            destination_start, source_start, length = list(map(int, line.split()))
+
+            destination = Range(destination_start, length)
+            source = Range(source_start, length)
+
+            range_maps.append(RangeMap(destination, source))
+
+        return cls(name, range_maps)
+
+    def __str__(self) -> str:
+        return f"{self.name}: " + ", ".join(map(str, self.range_maps))
 
     def evaluate(self, source: int) -> int:
-        for range in self.ranges:
+        for range in self.range_maps:
             if value := range.evaluate(source):
                 return value
 
         return source
 
+    def evaluate_range(self, source_range: "Range") -> list["Range"]:
+        ranges_to_evaluate = [source_range]
+        output_ranges = []
 
-def run(file: TextIO) -> Tuple[int, int]:
-    """Run the solution for this day."""
-    part_one, part_two = 0, 0
+        for range_map in self.range_maps:
+            new_ranges = []
 
-    # seeds = list(map(int, file.readline().strip().split()[1:]))
+            for input_range in ranges_to_evaluate:
+                evaluated, not_evaluated = range_map.split_evaluate(input_range)
 
-    # this_ranges = None
-    # maps = []
+                if evaluated:
+                    output_ranges.append(evaluated)
 
-    # for line in file:
-    #     line = line.strip()
+                new_ranges.extend(not_evaluated)
 
-    #     if not line:
-    #         continue
+            ranges_to_evaluate = new_ranges
 
-    #     if line.endswith("map:"):
-    #         if this_ranges is not None:
-    #             maps.append(this_ranges)
+        output_ranges.extend(ranges_to_evaluate)
 
-    #         this_ranges = Ranges()
+        return output_ranges
 
-    #         continue
 
-    #     # logging.info(line)
-
-    #     if line[0].isdigit():
-    #         params = map(int, line.split())
-    #         this_ranges.add_range(Range(*params))
-
-    # maps.append(this_ranges)
-
-    # part_one = min(
-    #     functools.reduce(lambda seed, ranges: ranges.evaluate(seed), maps, seed) for seed in seeds
-    # )
-
+def parse(file: TextIO) -> tuple[list[int], list[Mapping]]:
+    """Return the list of seeds and the mappings from the input file."""
     seeds = list(map(int, file.readline().strip().split()[1:]))
 
-    this_ranges = None
-    maps = []
-
-    for line in file:
+    mappings = []
+    while line := file.readline():
         line = line.strip()
 
-        if not line:
-            continue
-
         if line.endswith("map:"):
-            if this_ranges is not None:
-                maps.append(this_ranges)
+            name = line.split()[0]
 
-            this_ranges = Ranges()
+            lines = []
+            while line := file.readline().strip():
+                lines.append(line)
 
-            continue
+            mappings.append(Mapping.from_lines(name, lines))
 
-        # logging.info(line)
+    return seeds, mappings
 
-        if line[0].isdigit():
-            params = list(map(int, line.split()))
-            this_ranges.add_range(Range(params[1], params[0], params[2]))
 
-    maps.append(this_ranges)
-    maps.reverse()
+def interpret_seeds_as_ranges(seeds: list[int]) -> list[Range]:
+    return [Range(start, length) for start, length in zip(seeds[::2], seeds[1::2])]
 
-    # for location in range(40, 100):
-    #     seed = functools.reduce(lambda seed, ranges: ranges.evaluate(seed), maps, location)
-    #     print(location, seed)
 
-    seed_ranges = list(zip(seeds[::2], seeds[1::2]))
+def one(file: TextIO) -> Tuple[int, int]:
+    """Run the first part for this day."""
+    seeds, mappings = parse(file)
 
-    location = 9000000
-    while True:
-        seed = functools.reduce(lambda seed, ranges: ranges.evaluate(seed), maps, location)
+    return min(
+        functools.reduce(lambda seed, mapping: mapping.evaluate(seed), mappings, seed)
+        for seed in seeds
+    )
 
-        for start, length in seed_ranges:
-            if start <= seed < (start + length):
-                part_two = location
-                break
 
-        if part_two != 0:
-            break
+def two(file: TextIO) -> Tuple[int, int]:
+    """Run the second part for this day."""
+    seeds, mappings = parse(file)
 
-        location += 1
-        if location % 100000 == 0:
-            print(location)
+    ranges = interpret_seeds_as_ranges(seeds)
 
-    return part_one, part_two
+    for mapping in mappings:
+        ranges = [new_range for range in ranges for new_range in mapping.evaluate_range(range)]
+
+    return min(ranges).start

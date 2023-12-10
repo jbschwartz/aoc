@@ -1,92 +1,55 @@
-import logging
 from typing import TextIO, Tuple
 
 
-def run(file: TextIO) -> Tuple[int, int]:
-    """Run the solution for this day."""
-    part_one, part_two = 0, 0
+def get_first_and_last_digit(line: str) -> tuple[int, int]:
+    """Return the first and last digit in the line."""
+    first_digit = None
+    last_digit = None
 
-    # for line in file:
-    #     first_digit = None
-    #     last_digit = None
+    for char in line.strip():
+        try:
+            value = int(char)
+        except ValueError:
+            continue
 
-    #     for char in line.strip():
-    #         if char.isnumeric():
-    #             last_digit = int(char)
-    #             if not first_digit:
-    #                 first_digit = int(char) * 10
+        if not first_digit:
+            first_digit = value
 
-    #     part_one += first_digit + last_digit
+        last_digit = value
 
-    # needles = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
+    return first_digit, last_digit
 
-    # for line in file:
-    #     line = line.strip()
-    #     logging.info(line)
-    #     min_positions = [None] * len(needles)
-    #     max_positions = [None] * len(needles)
 
-    #     for value, needle in enumerate(needles):
-    #         min_positions[value] = line.find(needle)
-    #         max_positions[value] = line.rfind(needle)
+def get_line_value(line: str) -> int:
+    """Get the value for the given line."""
+    first_digit, last_digit = get_first_and_last_digit(line)
+    return 10 * first_digit + last_digit
 
-    #     try:
-    #         min_index = min_positions.index(min(p for p in min_positions if p >= 0))
-    #         line = line.replace(needles[min_index], str(min_index))
-    #     except ValueError:
-    #         pass
 
-    #     max_index = max_positions.index(max(max_positions))
-    #     line = line.replace(needles[max_index], str(max_index))
+def replacement(string: str, value: int) -> str:
+    """Return the replacement value for the given string."""
+    # Replace the number with the actual digit but include the first and last letter so that
+    # chained values are correctly intepreted (e.g., "oneight" => "o1e8t" => 18)
+    return string[0] + str(value) + string[-1]
 
-    #     first_digit = None
-    #     last_digit = None
 
-    #     for char in line.strip():
-    #         if char.isnumeric():
-    #             last_digit = int(char)
-    #             if not first_digit:
-    #                 first_digit = int(char) * 10
-    #     logging.info(line)
-    #     logging.info(first_digit + last_digit)
-    #     input()
-    #     part_two += first_digit + last_digit
+def one(file: TextIO) -> Tuple[int, int]:
+    """Run the first part for this day."""
+    return sum(get_line_value(line) for line in file)
+
+
+def two(file: TextIO) -> Tuple[int, int]:
+    """Run the second part for this day."""
+    result = 0
 
     needles = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"]
 
     for line in file:
         line = line.strip()
-        logging.info(line)
 
-        while True:
-            min_positions = [None] * len(needles)
+        for value, needle in enumerate(needles):
+            line = line.replace(needle, replacement(needle, value))
 
-            for value, needle in enumerate(needles):
-                min_positions[value] = line.find(needle)
+        result += get_line_value(line)
 
-            try:
-                min_index = min_positions.index(min(p for p in min_positions if p >= 0))
-            except ValueError:
-                break
-
-            line = line.replace(
-                needles[min_index],
-                needles[min_index][0] + str(min_index) + needles[min_index][-1],
-                1,
-            )
-
-        logging.info(line)
-
-        first_digit = None
-        last_digit = None
-
-        for char in line.strip():
-            if char.isnumeric():
-                last_digit = int(char)
-                if not first_digit:
-                    first_digit = int(char) * 10
-
-        logging.info(first_digit + last_digit)
-        part_two += first_digit + last_digit
-
-    return part_one, part_two
+    return result

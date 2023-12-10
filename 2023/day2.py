@@ -1,36 +1,50 @@
-import logging
+import enum
 from functools import reduce
 from typing import TextIO, Tuple
 
-MAXIMUMS = {"red": 12, "green": 13, "blue": 14}
+
+class Colors(enum.Enum):
+    RED = 12
+    GREEN = 13
+    BLUE = 14
 
 
-def run(file: TextIO) -> Tuple[int, int]:
-    """Run the solution for this day."""
-    part_one, part_two = 0, 0
+def parse(line: str) -> list[tuple[int, str]]:
+    """Return a list of draws for the given game"""
+    game = line.strip().split(":")[1].split(";")
 
-    # for id, line in enumerate(file, 1):
+    draws = []
+    for draw in game:
+        for pair in draw.split(","):
+            number, color = pair.strip().split(" ")
+            draws.append((int(number), Colors[color.upper()]))
 
-    #     valid = True
-    #     draws = line.strip().split(":")[1].split(";")
-    #     for draw in draws:
-    #         for pair in draw.split(","):
-    #             num, color = pair.strip().split(" ")
-    #             if int(num) > MAXIMUMS[color]:
-    #                 valid = False
+    return draws
 
-    #     if valid:
-    #         part_one += id
+
+def one(file: TextIO) -> Tuple[int, int]:
+    """Run the first part for this day."""
+    result = 0
+
+    for id, line in enumerate(file, 1):
+        if all(number <= color.value for number, color in parse(line)):
+            result += id
+
+    return result
+
+
+def two(file: TextIO) -> Tuple[int, int]:
+    """Run the second part for this day."""
+    result = 0
 
     for line in file:
-        minimums = {"red": 0, "green": 0, "blue": 0}
-        draws = line.strip().split(":")[1].split(";")
-        for draw in draws:
-            for pair in draw.split(","):
-                num, color = pair.strip().split(" ")
-                if int(num) > minimums[color]:
-                    minimums[color] = int(num)
+        minimums = {Colors.RED: 0, Colors.GREEN: 0, Colors.BLUE: 0}
 
-        part_two += reduce(lambda x, y: x * y, minimums.values(), 1)
+        for number, color in parse(line):
+            if number > minimums[color]:
+                minimums[color] = number
 
-    return part_one, part_two
+        # Get the product of all three values.
+        result += reduce(lambda x, y: x * y, minimums.values(), 1)
+
+    return result

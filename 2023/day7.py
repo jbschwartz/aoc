@@ -1,7 +1,20 @@
 import bisect
 import enum
-import logging
+from functools import cached_property
 from typing import TextIO, Tuple
+
+
+def _replace_jokers(occurances: dict) -> dict:
+    if CardType.JOKER.value not in occurances or len(occurances) == 1:
+        return occurances
+
+    num_jokers = occurances[CardType.JOKER.value]
+    del occurances[CardType.JOKER.value]
+
+    max_card_value = max(occurances, key=occurances.get)
+    occurances[max_card_value] += num_jokers
+
+    return occurances
 
 
 class HandType(enum.Enum):
@@ -15,102 +28,111 @@ class HandType(enum.Enum):
 
     @classmethod
     def from_cards(cls, cards: list[int]) -> "HandType":
-        d = {}
+        occurances = {}
 
+        # Sum the occurance of each card in the hand.
         for card in cards:
-            if card in d:
-                d[card] += 1
-            else:
-                d[card] = 1
+            try:
+                occurances[card] += 1
+            except KeyError:
+                occurances[card] = 1
 
-        add = 0
-        if 1 in d:
-            if d[1] == 5:
+        occurances = _replace_jokers(occurances)
+
+        largest_group_size = max(occurances.values())
+
+        # See how many unique cards there are in the hand.
+        match len(occurances.keys()):
+            case 5:
+                return HandType.High
+
+            case 4:
+                return HandType.OnePair
+
+            case 3:
+                if largest_group_size == 3:
+                    return HandType.Kind3
+                if largest_group_size == 2:
+                    return HandType.TwoPair
+
+            case 2:
+                if largest_group_size == 4:
+                    return HandType.Kind4
+                if largest_group_size == 3:
+                    return HandType.FullHouse
+
+            case 1:
                 return HandType.Kind5
-
-            add = d[1]
-            del d[1]
-
-        num_unique_cards = len(d.keys())
-        max_group = max(d.values())
-
-        max_group += add
-
-        if num_unique_cards == 5:
-            return HandType.High
-
-        if num_unique_cards == 4:
-            return HandType.OnePair
-
-        if num_unique_cards == 1:
-            return HandType.Kind5
-
-        if num_unique_cards == 2:
-            if max_group == 4:
-                return HandType.Kind4
-            if max_group == 3:
-                return HandType.FullHouse
-
-        if num_unique_cards == 3:
-            if max_group == 3:
-                return HandType.Kind3
-            if max_group == 2:
-                return HandType.TwoPair
-
-        print("here")
-        print(num_unique_cards, max_group)
 
 
 class CardType(enum.Enum):
     A = 14
     K = 13
     Q = 12
-    J = 1
+    J = 11
     T = 10
+    JOKER = 1
 
 
 class Hand:
-    def __init__(self, cards: list[int], type: HandType, bid: int) -> None:
+    """A hand consists of five card values and a bid."""
+
+    def __init__(self, cards: list[int], bid: int) -> None:
         self.cards = cards
-        self.type = type
         self.bid = bid
 
     @classmethod
-    def from_string(cls, hand: str, bid: str) -> "Hand":
+    def from_string(cls, hand: str, bid: str, use_jokers: bool = False) -> "Hand":
         cards = []
         for card in hand:
             try:
                 cards.append(int(card))
             except ValueError:
-                cards.append(CardType[card.upper()].value)
+                card = CardType[card.upper()]
+                if card is CardType.J and use_jokers:
+                    cards.append(CardType.JOKER.value)
+                else:
+                    cards.append(card.value)
 
-        type = HandType.from_cards(cards)
+        return cls(cards, int(bid))
 
-        return cls(cards, type, int(bid))
+    @cached_property
+    def hand_type(self) -> HandType:
+        """Get the hand's type."""
+        return HandType.from_cards(self.cards)
 
     def __lt__(self, other: "Hand") -> bool:
-        if self.type.value == other.type.value:
+        """Compare hands based on the type and then on each individual value."""
+        if self.hand_type.value == other.hand_type.value:
             for this_card, that_card in zip(self.cards, other.cards):
                 if this_card == that_card:
                     continue
 
                 return this_card < that_card
 
-        return self.type.value < other.type.value
+        return self.hand_type.value < other.hand_type.value
 
 
-def run(file: TextIO) -> Tuple[int, int]:
-    """Run the solution for this day."""
-    part_one, part_two = 0, 0
-
+def get_result(file: TextIO, use_jokers: bool = False) -> list[Hand]:
+    """Get the result based on whether or not jokers are in play."""
+    result = 0
     hands = []
 
     for line in file:
         hand, bid = line.strip().split()
-        bisect.insort(hands, Hand.from_string(hand, bid))
+        bisect.insort(hands, Hand.from_string(hand, bid, use_jokers))
 
-    part_one = 0
     for rank, hand in enumerate(hands, 1):
-        part_one += rank * hand.bid
+        result += rank * hand.bid
 
-    return part_one, part_two
+    return result
+
+
+def one(file: TextIO) -> Tuple[int, int]:
+    """Run the first part for this day."""
+    return get_result(file)
+
+
+def two(file: TextIO) -> Tuple[int, int]:
+    """Run the second part for this day."""
+    return get_result(file, True)

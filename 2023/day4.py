@@ -1,50 +1,48 @@
-import logging
 from typing import TextIO, Tuple
 
 
-def run(file: TextIO) -> Tuple[int, int]:
-    """Run the solution for this day."""
-    part_one, part_two = 0, 0
+def num_matches(line: str) -> int:
+    """Return the number of matches for the given line."""
+    card, numbers = line.strip().split(":")
 
-    # for line in file:
-    #     line = line.strip()
-    #     card, numbers = line.split(":")
+    # Create sets to perform an intersection.
+    winning_numbers, our_numbers = map(
+        lambda numbers: set(n for n in numbers.strip().split()),
+        numbers.strip().split("|"),
+    )
 
-    #     id = int(card.strip().split(" ")[-1])
+    return len(winning_numbers.intersection(our_numbers))
 
-    #     winning_numbers, our_numbers = map(
-    #         lambda numbers: set(n for n in numbers.strip().split(" ") if n != ""),
-    #         numbers.strip().split("|"),
-    #     )
 
-    #     num_matches = len(winning_numbers.intersection(our_numbers))
+def one(file: TextIO) -> Tuple[int, int]:
+    """Run the first part for this day."""
+    result = 0
 
-    #     if num_matches > 0:
-    #         part_one += 2 ** (num_matches - 1)
+    for line in file:
+        matches = num_matches(line)
 
+        if matches > 0:
+            result += 2 ** (matches - 1)
+
+    return result
+
+
+def two(file: TextIO) -> Tuple[int, int]:
+    """Run the second part for this day."""
     copies = [0]
 
     for id, line in enumerate(file, 1):
-        _, numbers = line.strip().split(":")
-
-        winning_numbers, our_numbers = map(
-            lambda numbers: set(n for n in numbers.strip().split(" ") if n != ""),
-            numbers.strip().split("|"),
-        )
-
-        num_matches = len(winning_numbers.intersection(our_numbers))
-
-        if len(copies) <= id:
-            copies.append(1)
-        else:
+        try:
             copies[id] += 1
+        except IndexError:
+            # Create an element to keep track of the number of copies of this particular card.
+            copies.append(1)
 
-        for i in range(num_matches):
+        for i in range(1, num_matches(line) + 1):
+            # Add a new copy for each card from this cards winners.
             try:
-                copies[id + i + 1] += copies[id]
+                copies[id + i] += copies[id]
             except IndexError:
                 copies.append(copies[id])
 
-    part_two = sum(copies)
-
-    return part_one, part_two
+    return sum(copies)

@@ -25,15 +25,12 @@ class Symbol:
     ratio: int = 1
 
 
-def run(file: TextIO) -> Tuple[int, int]:
-    """Run the solution for this day."""
-    part_one, part_two = 0, 0
-
+def get_parts_symbols(file) -> tuple[list[Part], list[Symbol]]:
+    """Get a list of parts and symbols from the input."""
     parts = []
     symbols = []
     for row_index, line in enumerate(file):
         line = line.strip()
-        # logging.info(line)
 
         in_part = False
 
@@ -49,23 +46,40 @@ def run(file: TextIO) -> Tuple[int, int]:
             else:
                 if char != ".":
                     symbols.append(Symbol(row_index, column_index, char))
-                    # print(symbols[-1])
 
                 if in_part:
                     parts[-1].end = column_index - 1
-                    # print(parts[-1])
 
                 in_part = False
 
         if parts[-1].end == 0:
             parts[-1].end = column_index - 1
 
-    # for part in parts:
-    #     for symbol in symbols:
-    #         if part.is_adjacent(symbol):
-    #             part.is_part = True
-    #             part_one += part.value
-    #             break
+    return parts, symbols
+
+
+def one(file: TextIO) -> Tuple[int, int]:
+    """Run the first part for this day."""
+    result = 0
+
+    parts, symbols = get_parts_symbols(file)
+
+    for part in parts:
+        for symbol in symbols:
+            if part.is_adjacent(symbol):
+                part.is_part = True
+                result += part.value
+                break
+
+    return result
+
+
+def two(file: TextIO) -> Tuple[int, int]:
+    """Run the second part for this day."""
+    result = 0
+
+    parts, symbols = get_parts_symbols(file)
+
     for symbol in symbols:
         if symbol.char != "*":
             continue
@@ -80,6 +94,6 @@ def run(file: TextIO) -> Tuple[int, int]:
                 break
 
         if num_adjacent == 2:
-            part_two += symbol.ratio
+            result += symbol.ratio
 
-    return part_one, part_two
+    return result
