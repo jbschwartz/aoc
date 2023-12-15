@@ -128,11 +128,11 @@ def get_result(file: TextIO, use_jokers: bool = False) -> list[Hand]:
     return result
 
 
-def one(file: TextIO) -> Tuple[int, int]:
+def one(file: TextIO) -> int:
     """Run the first part for this day."""
     return get_result(file)
 
 
-def two(file: TextIO) -> Tuple[int, int]:
+def two(file: TextIO) -> int:
     """Run the second part for this day."""
     return get_result(file, True)

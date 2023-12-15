@@ -14,7 +14,7 @@ def num_matches(line: str) -> int:
     return len(winning_numbers.intersection(our_numbers))
 
 
-def one(file: TextIO) -> Tuple[int, int]:
+def one(file: TextIO) -> int:
     """Run the first part for this day."""
     result = 0
 
@@ -27,7 +27,7 @@ def one(file: TextIO) -> Tuple[int, int]:
     return result
 
 
-def two(file: TextIO) -> Tuple[int, int]:
+def two(file: TextIO) -> int:
     """Run the second part for this day."""
     copies = [0]
 

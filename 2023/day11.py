@@ -63,14 +63,14 @@ def parse(file: TextIO, galaxy_spacing: int = 1) -> list[Galaxy]:
     return galaxies
 
 
-def one(file: TextIO) -> Tuple[int, int]:
+def one(file: TextIO) -> int:
     """Run the first part for this day."""
     galaxies = parse(file)
 
     return sum(compute_distances_between_pairs(galaxies))
 
 
-def two(file: TextIO) -> Tuple[int, int]:
+def two(file: TextIO) -> int:
     """Run the second part for this day."""
     galaxies = parse(file, 999999)
 

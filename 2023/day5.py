@@ -178,7 +178,7 @@ def interpret_seeds_as_ranges(seeds: list[int]) -> list[Range]:
     return [Range(start, length) for start, length in zip(seeds[::2], seeds[1::2])]
 
 
-def one(file: TextIO) -> Tuple[int, int]:
+def one(file: TextIO) -> int:
     """Run the first part for this day."""
     seeds, mappings = parse(file)
 
@@ -188,7 +188,7 @@ def one(file: TextIO) -> Tuple[int, int]:
     )
 
 
-def two(file: TextIO) -> Tuple[int, int]:
+def two(file: TextIO) -> int:
     """Run the second part for this day."""
     seeds, mappings = parse(file)
 

@@ -101,11 +101,11 @@ def parse_patterns(file: TextIO) -> list[Pattern]:
     return patterns
 
 
-def one(file: TextIO) -> Tuple[int, int]:
+def one(file: TextIO) -> int:
     """Run the first part for this day."""
     return sum(pattern.get_mirror_result() for pattern in parse_patterns(file))
 
 
-def two(file: TextIO) -> Tuple[int, int]:
+def two(file: TextIO) -> int:
     """Run the second part for this day."""
     return sum(pattern.get_smudge_result() for pattern in parse_patterns(file))

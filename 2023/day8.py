@@ -42,14 +42,14 @@ def _parse_line(line: str) -> Tuple[str, dict]:
     return node.strip(), {"L": elements[0].strip(), "R": elements[1].strip()}
 
 
-def one(file: TextIO) -> Tuple[int, int]:
+def one(file: TextIO) -> int:
     """Run the solution for this day."""
     instructions, nodes = get_instructions_nodes(file)
 
     return solve(nodes, instructions, "AAA")
 
 
-def two(file: TextIO) -> Tuple[int, int]:
+def two(file: TextIO) -> int:
     """Run the solution for this day."""
     instructions, nodes = get_instructions_nodes(file)
 

@@ -33,12 +33,12 @@ def replacement(string: str, value: int) -> str:
     return string[0] + str(value) + string[-1]
 
 
-def one(file: TextIO) -> Tuple[int, int]:
+def one(file: TextIO) -> int:
     """Run the first part for this day."""
     return sum(get_line_value(line) for line in file)
 
 
-def two(file: TextIO) -> Tuple[int, int]:
+def two(file: TextIO) -> int:
     """Run the second part for this day."""
     result = 0
 
