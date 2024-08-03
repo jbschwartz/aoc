@@ -1,4 +1,6 @@
 /.*/
 /input/
+/*/inputs/
 
 __pycache__
+/zig-out
